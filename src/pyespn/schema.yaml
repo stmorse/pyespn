@@ -1,0 +1,25 @@
+# schema.yaml
+
+base_url: "https://lm-api-reads.fantasy.espn.com/apis/v3/games"
+
+endpoints:
+
+  get_league_teams:
+    # The {season} and {league_id} placeholders are filled by the gateway.
+    path: "/ffl/seasons/{season}/segments/0/leagues/{league_id}"
+    method: "GET"
+    
+    # Default query params for this endpoint (can be overridden per call).
+    params:
+      view: "mTeam"
+    
+    # Where in the JSON response the list of items lives.
+    response_root: "teams"
+    
+    # Which domain model to use to validate each item (defined in gateway).
+    model: "Team"
+
+    # map API fields to what we call them in the code
+    field_map:
+      name: name
+      currentProjectedRank: current_projected_rank
