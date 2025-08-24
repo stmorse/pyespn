@@ -1,6 +1,7 @@
 # api_gateway.py
 
 from __future__ import annotations
+import copy
 from importlib import resources
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Type
@@ -9,12 +10,14 @@ import httpx
 import yaml
 from pydantic import BaseModel
 
-from .models import Team
+from .models import Team, TeamRecord, Player
 from .settings import ESPNSettings
 
 # Model registry so the schema can refer to models by name.
 MODEL_REGISTRY: Dict[str, Type[BaseModel]] = {
     "Team": Team,
+    "TeamRecord": TeamRecord,
+    "Player": Player
 }
 
 @dataclass
@@ -39,7 +42,7 @@ class OperationSpec:
         try:
             return MODEL_REGISTRY[self.model_name]
         except KeyError:
-            raise KeyError(f"Model '{self.model_name}' not found in MODEL_REGISTRY.")
+            raise KeyError(f"Model '{self.model_name}' not in MODEL_REGISTRY.")
 
 
 class APIGateway:
@@ -106,6 +109,8 @@ class APIGateway:
         - converts response to pydantic model and returns
         """
 
+        # --- GET THE DATA ---
+
         # get the operation requested
         op = self._get_operation(operation)
         route = self._get_route(op.route)
@@ -132,18 +137,60 @@ class APIGateway:
         else:
             data = payload
         
-        # get map of: {"our codebase's field": "current espn field"} and remap
+        # remap the API's {api_field: val} to {my_equiv_field: val}
+        # field_map = op.field_map or {}
+        # _map_item = lambda item: {field_map.get(k,k):v for k,v in item.items()}
+
+
+        # --- HANDLERS FOR NESTED MODELS ---
+        # TODO: this seems terrible
+
+        _MISSING = object()
+
+        def _get_by_path(obj: Dict[str, Any], path: str) -> Any:
+            cur = obj
+            for seg in path.split("."):
+                if not isinstance(cur, dict) or seg not in cur:
+                    return _MISSING
+                cur = cur[seg]
+            return cur
+
+        def _set_by_path(obj: Dict[str, Any], path: str, value: Any) -> None:
+            cur = obj
+            parts = path.split(".")
+            for seg in parts[:-1]:
+                nxt = cur.get(seg)
+                if not isinstance(nxt, dict):
+                    nxt = {}
+                    cur[seg] = nxt
+                cur = nxt
+            cur[parts[-1]] = value
+
+        def _map_item_dotted(item: Dict[str, Any], mapping: Dict[str, str]) -> Dict[str, Any]:
+            """
+            Returns a new dict where any mapping like 'src.a.b' -> 'dst.x.y'
+            is applied. Unmapped keys are preserved as-is.
+            """
+            out = copy.deepcopy(item)
+            for src, dst in (mapping or {}).items():
+                val = _get_by_path(item, src)
+                if val is not _MISSING:
+                    _set_by_path(out, dst, val)
+            return out
+        
+
+        # --- CONVERT DATA TO MODEL(S) ---
+        
         field_map = op.field_map or {}
-        _map_item = lambda item: {field_map.get(k,k):v for k,v in item.items()}
 
         # handle `data` that is a single model
         if op.response_form == "dict" and isinstance(data, dict):
-            mapped = _map_item(data)
+            mapped = _map_item_dotted(data, field_map)
             return model_cls.model_validate(mapped)
 
         # handle `data` that is a list of models
         if op.response_form == "list" and isinstance(data, list):
-            mapped = [_map_item(x) if isinstance(x, dict) else x for x in data]
+            mapped = [_map_item_dotted(x, field_map) if isinstance(x, dict) else x for x in data]
             return [model_cls.model_validate(x) for x in mapped]
 
         # Fallback for non-JSON-object/list responses

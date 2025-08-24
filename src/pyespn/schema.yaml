@@ -8,6 +8,13 @@ routes:
     path: "/ffl/seasons/{season}/segments/0/leagues/{league_id}"
     method: "GET"
 
+  league_history:
+    path: "/ffl/leagueHistory/{league_id}"
+    method: "GET"
+
+  players:
+    path: "/ffl/seasons/{season}/players"
+
 operations:
 
   league_teams:
@@ -18,5 +25,30 @@ operations:
     response_root: "teams"
     response_form: "list"
     field_map:
-      name: name
       currentProjectedRank: current_projected_rank
+      draftDayProjectedRank: draft_day_projected_rank
+      rankCalculatedFinal: rank_calculated_final
+      rankFinal: rank_final
+      playoffSeed: playoff_seed
+      pointsAdjusted: points_adjusted
+      waiverRank: waiver_rank
+      record.overall.pointsFor: record.overall.points_for
+      record.overall.pointsAgainst: record.overall.points_against
+
+  # position (default and eligible) and name
+  players_short:
+    route: "players"
+    params:
+      view: "players_wl"
+    model: "Player"
+    response_form: "list"
+    field_map:
+      defaultPositionId: default_position_id
+      eligibleSlots: eligible_positions
+      firstName: first_name
+      lastName: last_name
+      proTeamId: pro_team_id
+
+  
+
+
