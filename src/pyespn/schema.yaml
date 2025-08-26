@@ -24,16 +24,10 @@ operations:
     model: "Team"
     response_root: "teams"
     response_form: "list"
-    field_map:
-      currentProjectedRank: current_projected_rank
-      draftDayProjectedRank: draft_day_projected_rank
-      rankCalculatedFinal: rank_calculated_final
-      rankFinal: rank_final
-      playoffSeed: playoff_seed
-      pointsAdjusted: points_adjusted
-      waiverRank: waiver_rank
-      record.overall.pointsFor: record.overall.points_for
-      record.overall.pointsAgainst: record.overall.points_against
+    # field_map:
+    #   currentProjectedRank: current_projected_rank
+    #   record.overall.pointsFor: record.overall.points_for
+    #   record.overall.pointsAgainst: record.overall.points_against
 
   # position (default and eligible) and name
   players_short:
@@ -42,12 +36,16 @@ operations:
       view: "players_wl"
     model: "Player"
     response_form: "list"
-    field_map:
-      defaultPositionId: default_position_id
-      eligibleSlots: eligible_positions
-      firstName: first_name
-      lastName: last_name
-      proTeamId: pro_team_id
+    # field_map:
+    #   defaultPositionId: default_position_id
+
+  boxscores:
+    route: "league"
+    params:
+      view: "mBoxscore"
+    model: "Boxscore"
+    response_root: "schedule"
+    response_form: "list"
 
   
 

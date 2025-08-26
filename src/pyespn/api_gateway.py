@@ -14,6 +14,8 @@ from .models import Team, TeamRecord, Player
 from .settings import ESPNSettings
 
 # Model registry so the schema can refer to models by name.
+# NOTE: we only need this for top-level models --> the models may contain 
+# sub-models, no need to define here
 MODEL_REGISTRY: Dict[str, Type[BaseModel]] = {
     "Team": Team,
     "TeamRecord": TeamRecord,
@@ -138,18 +140,25 @@ class APIGateway:
             data = payload
         
         # remap the API's {api_field: val} to {my_equiv_field: val}
+        # NOTE: this doesn't handle nested models so its commented out
         # field_map = op.field_map or {}
         # _map_item = lambda item: {field_map.get(k,k):v for k,v in item.items()}
 
 
         # --- HANDLERS FOR NESTED MODELS ---
-        # TODO: this seems terrible
+        # this handles the field_map when we have nested models
 
         _MISSING = object()
 
         def _get_by_path(obj: Dict[str, Any], path: str) -> Any:
+            # start cur as the full API data
             cur = obj
+
+            # path is something like record.overall.pointsFor
+            # this traverses down the dict until cur is the value of pointsFor
+            # if we run out of dict before we get there, return "_MISSING"
             for seg in path.split("."):
+                # if cur is not a dict anymore or this seg is not 
                 if not isinstance(cur, dict) or seg not in cur:
                     return _MISSING
                 cur = cur[seg]
@@ -171,11 +180,18 @@ class APIGateway:
             Returns a new dict where any mapping like 'src.a.b' -> 'dst.x.y'
             is applied. Unmapped keys are preserved as-is.
             """
+
             out = copy.deepcopy(item)
             for src, dst in (mapping or {}).items():
+                # val is the value of the end of the dotted map 
+                # (like record.overall.pointsFor, val is 123 or whatever)
                 val = _get_by_path(item, src)
+                
+                # if its not missing, we rename `out`` appropriate
                 if val is not _MISSING:
                     _set_by_path(out, dst, val)
+            
+            # return the re-mapped `out`
             return out
         
 

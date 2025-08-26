@@ -12,14 +12,18 @@ def main() -> None:
     # do a test call to grab teams
     teams = league.get_teams()
     for t in teams:
-        print(t.record.home.points_against)
-        print(f"{t.name} (projected {t.current_projected_rank}) ({t.abbrev})")
+        # print(t.record.home.points_against)
+        # print(t.record)
+        # print(t.record.home)
+        print(t)
+        print()
 
     print()
 
     players = league.get_players()
     for p in players[:5]:
-        print(p.first_name)
+        print(p)
+        print()
 
 if __name__ == "__main__":
     main()

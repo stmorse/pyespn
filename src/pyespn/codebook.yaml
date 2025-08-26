@@ -1,0 +1,43 @@
+# ESPN position and team code mappings
+
+positions:
+  0: { name: "Quarterback", abbr: "QB" }
+  2: { name: "Running Back", abbr: "RB" }
+  4: { name: "Wide Receiver", abbr: "WR" }
+  6: { name: "Tight End", abbr: "TE" }
+  16: { name: "Defense/Special Teams", abbr: "D/ST" }
+
+# TODO: -1 is "Bye" in some contexts
+pro_teams:
+  1:  { abbr: "ATL", name: "Atlanta Falcons" }
+  2:  { abbr: "BUF", name: "Buffalo Bills" }
+  3:  { abbr: "CHI", name: "Chicago Bears" }
+  4:  { abbr: "CIN", name: "Cincinnati Bengals" }
+  5:  { abbr: "CLE", name: "Cleveland Browns" }
+  6:  { abbr: "DAL", name: "Dallas Cowboys" }
+  7:  { abbr: "DEN", name: "Denver Broncos" }
+  8:  { abbr: "DET", name: "Detroit Lions" }
+  9:  { abbr: "GB", name: "Green Bay Packers" }
+  10: { abbr: "TEN", name: "Tennessee Titans" }
+  11: { abbr: "IND", name: "Indianapolis Colts" }
+  12: { abbr: "KC", name: "Kansas City Chiefs" }
+  13: { abbr: "OAK", name: "Las Vegas Raiders" }
+  14: { abbr: "LAR", name: "Los Angeles Rams" }
+  15: { abbr: "MIA", name: "Miami Dolphins" }
+  16: { abbr: "MIN", name: "Minnesota Vikings" }
+  17: { abbr: "NE", name: "New England Patriots" }
+  18: { abbr: "NO", name: "New Orleans Saints" }
+  19: { abbr: "NYG", name: "New York Giants" }
+  20: { abbr: "NYJ", name: "New York Jets" }
+  21: { abbr: "PHI", name: "Philadelphia Eagles" }
+  22: { abbr: "ARI", name: "Arizona Cardinals" }
+  23: { abbr: "PIT", name: "Pittsburgh Steelers" }
+  24: { abbr: "LAC", name: "Los Angeles Chargers" }
+  25: { abbr: "SF", name: "San Francisco 49ers" }
+  26: { abbr: "SEA", name: "Seattle Seahawks" }
+  27: { abbr: "TB", name: "Tampa Bay Buccaneers" }
+  28: { abbr: "WSH", name: "Washington Commanders" }
+  29: { abbr: "CAR", name: "Carolina Panthers" }
+  30: { abbr: "JAX", name: "Jacksonville Jaguars" }
+  33: { abbr: "BAL", name: "Baltimore Ravens" }
+  34: { abbr: "HOU", name: "Houston Texans" }

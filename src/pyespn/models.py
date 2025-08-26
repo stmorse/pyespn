@@ -1,13 +1,18 @@
 from typing import Any, Dict, List, Optional, Type
-
 from pydantic import BaseModel
+from .codebook import codebook, Position, ProTeam
+
+
+# --------------------------------------------------
+# TEAM
+# --------------------------------------------------
 
 class RecordLine(BaseModel):
     wins: int
     losses: int
     ties: int = 0
-    points_for: Optional[float] = 0.0
-    points_against: Optional[float] = 0.0
+    pointsFor: Optional[float] = 0.0
+    pointsAgainst: Optional[float] = 0.0
 
     model_config = {"extra": "ignore"}
 
@@ -22,14 +27,14 @@ class Team(BaseModel):
     id: int
     abbrev: str
     name: str
-    current_projected_rank: Optional[int] = None
-    draft_day_projected_rank: Optional[int] = None
-    rank_calculated_final: Optional[int] = None
-    rank_final: Optional[int] = None
-    playoff_seed: Optional[int] = None
+    currentProjectedRank: Optional[int] = None
+    draftDayProjectedRank: Optional[int] = None
+    rankCalculatedFinal: Optional[int] = None
+    rankFinal: Optional[int] = None
+    playoffSeed: Optional[int] = None
     points: Optional[float] = None
-    points_adjusted: Optional[float] = None
-    waiver_rank: Optional[int] = None
+    pointsAdjusted: Optional[float] = None
+    waiverRank: Optional[int] = None
     record: Optional[TeamRecord] = None
 
     model_config = {
@@ -37,10 +42,24 @@ class Team(BaseModel):
         "extra": "ignore",         # ignore fields the API adds later
     }
 
+# --------------------------------------------------
+# PLAYER
+# --------------------------------------------------
+
 class Player(BaseModel):
     id: int
-    first_name: str
-    last_name: str
-    default_position_id: int
-    eligible_positions: List[int]
-    pro_team_id: int
+    firstName: str
+    lastName: str
+    defaultPositionId: int
+    eligibleSlots: List[int]
+    proTeamId: int
+
+    model_config = {"extra": "ignore"}
+
+    def position(self) -> Position:
+        """Return Position object for default_position_id"""
+        return codebook().position(self.defaultPositionId)
+
+    def pro_team(self) -> ProTeam:
+        """Return a ProTeam object for pro_team_id"""
+        return codebook().pro_team(self.proTeamId)
