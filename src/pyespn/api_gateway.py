@@ -10,7 +10,9 @@ import httpx
 import yaml
 from pydantic import BaseModel
 
-from .models import Team, Player, MatchupHistorical, RosterMoveResponse
+from .models import (
+    Team, Player, MatchupHistorical, RosterMoveResponse, Season
+)
 from .settings import ESPNSettings
 
 # Model registry so the schema can refer to models by name.
@@ -20,7 +22,8 @@ MODEL_REGISTRY: Dict[str, Type[BaseModel]] = {
     "Team": Team,
     "Player": Player,
     "MatchupHistorical": MatchupHistorical,
-    "RosterMoveResponse": RosterMoveResponse
+    "RosterMoveResponse": RosterMoveResponse,
+    "Season": Season,
 }
 
 @dataclass
@@ -118,7 +121,8 @@ class APIGateway:
             self, 
             operation: str, 
             path_args: Optional[Dict[str, Any]] = None,
-            payload: Optional[Dict[str, Any]] = None,
+            query_args: Optional[Dict[str, Any]] = None,
+            payload: Optional[Dict[str, Any]] = None,   # only for POST
     ) -> Any:
         """
         Main workhorse method: 
@@ -133,12 +137,15 @@ class APIGateway:
         route = self._get_route(op.route)
         base = self._get_base(route.base)
         url = self._format_url(base.url, route.path, path_args or {})
+        
+        # Merge op.params and query_args into one dict
+        params = {**op.params, **(query_args or {})}
 
         # send the request and convert to JSON
         resp = self._client.request(
             base.method,        # GET or POST
             url, 
-            params=op.params,   # ? params (mView, etc)
+            params=params,      # ? params (mView, etc)
             data=payload or {}  # only for POST
         )
         resp.raise_for_status()

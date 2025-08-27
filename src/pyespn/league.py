@@ -22,10 +22,25 @@ class League:
         self.gw = APIGateway()
 
     def get_teams(self) -> List[Team]:
-        return self.gw.request(
-            "league_teams",
-            path_args={"season": self.season, "league_id": self.league_id}
-        )
+        path_args = {"season": self.season, "league_id": self.league_id}
+
+        if self.historical:
+            # TODO: we have API leaking in here with "seasonId"
+            response = self.gw.request(
+                "league_teams_historical", 
+                path_args=path_args,
+                query_args={"seasonId": self.season} 
+            )
+
+            # response is a list of Season's
+            # should be only one since we specified ?seasonId=
+            # but we'll loop through anyway
+            for season in response:
+                if season.seasonId == self.season:
+                    return season.teams
+        else:
+            # otherwise, just pull this season normally
+            return self.gw.request("league_teams", path_args=path_args)
     
     def get_players(self) -> List[Player]:
         return self.gw.request(

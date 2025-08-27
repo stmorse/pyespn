@@ -43,6 +43,14 @@ operations:
     #   currentProjectedRank: current_projected_rank
     #   record.overall.pointsFor: record.overall.points_for
 
+  league_teams_historical:
+    route: "league_history"
+    params:
+      view: "mTeam"
+    model: "Season"
+    # response_root: "teams"
+    response_form: "list"
+
   # position (default and eligible) and name
   players_short:
     route: "players"

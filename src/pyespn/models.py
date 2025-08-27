@@ -42,6 +42,17 @@ class Team(BaseModel):
         "extra": "ignore",         # ignore fields the API adds later
     }
 
+
+# --------------------------------------------------
+# SEASON
+# --------------------------------------------------
+
+class Season(BaseModel):
+    seasonId: int       # year
+    teams: List[Team]
+
+    model_config = { "extra": "ignore" }
+
 # --------------------------------------------------
 # PLAYER
 # --------------------------------------------------
