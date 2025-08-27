@@ -1,19 +1,32 @@
 # schema.yaml
 
-base_url: "https://lm-api-reads.fantasy.espn.com/apis/v3/games"
+bases:
+  read:
+    url: "https://lm-api-reads.fantasy.espn.com/apis/v3/games"
+    method: "GET"
+
+  write:
+    url: "https://lm-api-writes.fantasy.espn.com/apis/v3/games"
+    method: "POST"
 
 
 routes:
   league:
     path: "/ffl/seasons/{season}/segments/0/leagues/{league_id}"
-    method: "GET"
+    base: "read"
 
   league_history:
     path: "/ffl/leagueHistory/{league_id}"
-    method: "GET"
+    base: "read"
 
   players:
     path: "/ffl/seasons/{season}/players"
+    base: "read"
+
+  transactions:
+    path: "/ffl/seasons/{season}/segments/0/leagues/{league_id}/transactions"
+    base: "write"
+
 
 operations:
 
@@ -24,10 +37,11 @@ operations:
     model: "Team"
     response_root: "teams"
     response_form: "list"
+    
+    # EXAMPLE OF FIELD_MAP (currently not used)
     # field_map:
     #   currentProjectedRank: current_projected_rank
     #   record.overall.pointsFor: record.overall.points_for
-    #   record.overall.pointsAgainst: record.overall.points_against
 
   # position (default and eligible) and name
   players_short:
@@ -36,8 +50,6 @@ operations:
       view: "players_wl"
     model: "Player"
     response_form: "list"
-    # field_map:
-    #   defaultPositionId: default_position_id
 
   # less detailed than mMatchup
   # returns boxscore-level info per matchup for entire season specified
@@ -57,6 +69,7 @@ operations:
   #   response_root: "schedule"
   #   response_form: "list"
 
+  # mMatchup and mBoxscore, for historical seasons, returns same thing
   matchups_historical:
     route: "league"
     params:
@@ -64,6 +77,11 @@ operations:
     model: "MatchupHistorical"
     response_root: "schedule"
     response_form: "list"
+
+  roster_move:
+    route: "transactions"
+    model: "RosterMoveResponse"
+    response_form: "dict"
 
   
 

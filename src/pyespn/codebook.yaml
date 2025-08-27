@@ -41,3 +41,6 @@ pro_teams:
   30: { abbr: "JAX", name: "Jacksonville Jaguars" }
   33: { abbr: "BAL", name: "Baltimore Ravens" }
   34: { abbr: "HOU", name: "Houston Texans" }
+
+
+# TODO: stat codes (ATT, INT, YDS, etc)

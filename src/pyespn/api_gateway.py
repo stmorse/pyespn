@@ -10,7 +10,7 @@ import httpx
 import yaml
 from pydantic import BaseModel
 
-from .models import Team, Player, Matchup
+from .models import Team, Player, MatchupHistorical, RosterMoveResponse
 from .settings import ESPNSettings
 
 # Model registry so the schema can refer to models by name.
@@ -19,15 +19,21 @@ from .settings import ESPNSettings
 MODEL_REGISTRY: Dict[str, Type[BaseModel]] = {
     "Team": Team,
     "Player": Player,
-    # "Boxscore": Boxscore
-    "Matchup": Matchup
+    "MatchupHistorical": MatchupHistorical,
+    "RosterMoveResponse": RosterMoveResponse
 }
+
+@dataclass
+class BaseSpec:
+    name: str
+    url: str
+    method: str
 
 @dataclass
 class RouteSpec:
     name: str
     path: str
-    method: str
+    base: str
 
 @dataclass
 class OperationSpec:
@@ -60,14 +66,21 @@ class APIGateway:
     def __init__(self):
         
         # load schema.yaml next to this module, via package resources
-        with resources.files("pyespn").joinpath("schema.yaml").open("r", encoding="utf-8") as f:
+        ypath = resources.files("pyespn").joinpath("schema.yaml")
+        with ypath.open("r", encoding="utf-8") as f:
             raw = yaml.safe_load(f)
 
         # load settings (currently just cookies) from .env
         settings = ESPNSettings()
-    
-        # grab base API url from schema
-        self.base_url: str = raw["base_url"].rstrip("/")
+
+        # populate _bases with BaseSpec's
+        self._bases: Dict[str, BaseSpec] = {}
+        for name, spec in raw["bases"].items():
+            self._bases[name] = BaseSpec(
+                name=name,
+                url=spec["url"],
+                method=spec["method"].upper(),
+            )
 
         # populate _routes with RouteSpec's
         self._routes: Dict[str, RouteSpec] = {}
@@ -75,7 +88,7 @@ class APIGateway:
             self._routes[name] = RouteSpec(
                 name=name,
                 path=spec["path"],
-                method=spec.get("method", "GET").upper(),
+                base=spec["base"],
             )
 
         # populate _operations with OperationSpec's
@@ -104,7 +117,8 @@ class APIGateway:
     def request(
             self, 
             operation: str, 
-            path_args: Optional[Dict[str, Any]] = None
+            path_args: Optional[Dict[str, Any]] = None,
+            payload: Optional[Dict[str, Any]] = None,
     ) -> Any:
         """
         Main workhorse method: 
@@ -112,43 +126,108 @@ class APIGateway:
         - converts response to pydantic model and returns
         """
 
-        # --- GET THE DATA ---
+        # --- GET THE RESPONSE ---
 
         # get the operation requested
         op = self._get_operation(operation)
         route = self._get_route(op.route)
-        url = self._format_url(route.path, path_args or {})
+        base = self._get_base(route.base)
+        url = self._format_url(base.url, route.path, path_args or {})
 
         # send the request and convert to JSON
-        resp = self._client.request(route.method, url, params=op.params)
+        resp = self._client.request(
+            base.method,        # GET or POST
+            url, 
+            params=op.params,   # ? params (mView, etc)
+            data=payload or {}  # only for POST
+        )
         resp.raise_for_status()
-        payload = resp.json()
+        resp = resp.json()
 
         # get class (model) of this endpoint (Team, etc) (actual class, not str)
         model_cls = op.model()
 
-        # If no model specified, return raw payload
+        # If no model specified, return raw response
         if model_cls is None:
             print("No model specified in schema, returning full payload.")
-            return payload
+            return resp
 
         # pull sub-JSON if endpoint specifies a field
         if op.response_root:
-            data = payload.get(op.response_root, None)
+            data = resp.get(op.response_root, None)
             if data is None:
                 raise KeyError(f"Key '{op.response_root}' not found in '{op.name}'.")
         else:
-            data = payload
+            data = resp
         
-        # remap the API's {api_field: val} to {my_equiv_field: val}
-        # NOTE: this doesn't handle nested models so its commented out
+        
+        # --- CONVERT DATA TO MODEL(S) ---
+        
+        field_map = op.field_map or {}
+
+        # handle `data` that is a single model
+        if op.response_form == "dict" and isinstance(data, dict):
+            mapped = self._map_item(data, field_map)
+            return model_cls.model_validate(mapped)
+
+        # handle `data` that is a list of models
+        if op.response_form == "list" and isinstance(data, list):
+            mapped = [
+                self._map_item(x, field_map) 
+                if isinstance(x, dict) else x for x in data
+            ]
+            return [model_cls.model_validate(x) for x in mapped]
+
+        # Fallback for non-JSON-object/list responses
+        print("Response does not match response type, returning full payload.")
+        return resp
+
+
+    # ------------------------------------------------
+    # INTERNAL METHODS
+    # ------------------------------------------------
+
+    def _get_base(self, name: str) -> BaseSpec:
+        try:
+            return self._bases[name]
+        except KeyError:
+            raise KeyError(f"Base '{name}' not defined in schema.")
+        
+    def _get_route(self, name: str) -> RouteSpec:
+        try:
+            return self._routes[name]
+        except KeyError:
+            raise KeyError(f"Route '{name}' not defined in schema.")
+
+    def _get_operation(self, name: str) -> OperationSpec:
+        try:
+            return self._operations[name]
+        except KeyError:
+            raise KeyError(f"Operation '{name}' not defined in schema.")
+
+    def _format_url(
+            self, 
+            base_url: str, 
+            path_template: str, 
+            path_params: Dict[str, Any]
+    ) -> str:
+        try:
+            path = path_template.format(**path_params)
+        except KeyError as e:
+            raise KeyError(f"Missing path parameter: {e}") from e
+        return f"{base_url}{path}"
+    
+    def _map_item(self, 
+            item: Dict[str, Any], 
+            mapping: Dict[str, str]
+    ) -> Dict[str, Any]:
+        """Handles field_map changes in schema, including nested changes"""
+
+        # NOTE: (OLDER) this doesn't handle nested models so its commented out
         # field_map = op.field_map or {}
         # _map_item = lambda item: {field_map.get(k,k):v for k,v in item.items()}
 
-
-        # --- HANDLERS FOR NESTED MODELS ---
-        # this handles the field_map when we have nested models
-
+        # dummy object to signal a missing entry
         _MISSING = object()
 
         def _get_by_path(obj: Dict[str, Any], path: str) -> Any:
@@ -176,7 +255,9 @@ class APIGateway:
                 cur = nxt
             cur[parts[-1]] = value
 
-        def _map_item_dotted(item: Dict[str, Any], mapping: Dict[str, str]) -> Dict[str, Any]:
+        def _map_item_dotted(
+                item: Dict[str, Any], mapping: Dict[str, str]
+        ) -> Dict[str, Any]:
             """
             Returns a new dict where any mapping like 'src.a.b' -> 'dst.x.y'
             is applied. Unmapped keys are preserved as-is.
@@ -195,41 +276,4 @@ class APIGateway:
             # return the re-mapped `out`
             return out
         
-
-        # --- CONVERT DATA TO MODEL(S) ---
-        
-        field_map = op.field_map or {}
-
-        # handle `data` that is a single model
-        if op.response_form == "dict" and isinstance(data, dict):
-            mapped = _map_item_dotted(data, field_map)
-            return model_cls.model_validate(mapped)
-
-        # handle `data` that is a list of models
-        if op.response_form == "list" and isinstance(data, list):
-            mapped = [_map_item_dotted(x, field_map) if isinstance(x, dict) else x for x in data]
-            return [model_cls.model_validate(x) for x in mapped]
-
-        # Fallback for non-JSON-object/list responses
-        print("Response does not match response type, returning full payload.")
-        return payload
-
-    # --- Internals ---
-    def _get_route(self, name: str) -> RouteSpec:
-        try:
-            return self._routes[name]
-        except KeyError:
-            raise KeyError(f"Operation '{name}' not defined in schema.")
-
-    def _get_operation(self, name: str) -> OperationSpec:
-        try:
-            return self._operations[name]
-        except KeyError:
-            raise KeyError(f"Operation '{name}' not defined in schema.")
-
-    def _format_url(self, path_template: str, path_params: Dict[str, Any]) -> str:
-        try:
-            path = path_template.format(**path_params)
-        except KeyError as e:
-            raise KeyError(f"Missing path parameter: {e}") from e
-        return f"{self.base_url}{path}"
+        return _map_item_dotted(item, mapping)

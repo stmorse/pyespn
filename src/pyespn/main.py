@@ -1,10 +1,11 @@
-from .api_gateway import APIGateway
+# testing for pyespn module
+
 from .league import League
 
 def main() -> None:
 
     # setup league
-    season = 2025
+    season = 2023
     league_id = 572240
 
     league = League(season=season, league_id=league_id)

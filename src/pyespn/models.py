@@ -1,5 +1,5 @@
-from typing import Any, Dict, List, Optional, Type
-from pydantic import BaseModel
+from typing import Any, Dict, List, Literal, Optional, Type
+from pydantic import BaseModel, Field, conint
 from .codebook import codebook, Position, ProTeam
 
 
@@ -72,29 +72,58 @@ class Player(BaseModel):
 # MATCHUP
 # --------------------------------------------------
 
-class RosterEntry(BaseModel):
-    lineupSlotId: int
-    playerId: int
+# class RosterEntry(BaseModel):
+#     lineupSlotId: int
+#     playerId: int
 
-    model_config = {"extra": "ignore"}
+#     model_config = {"extra": "ignore"}
 
-class TeamRoster(BaseModel):
-    appliedStatTotal: float
-    entries: List[RosterEntry]
+# class TeamRoster(BaseModel):
+#     appliedStatTotal: float
+#     entries: List[RosterEntry]
 
-    model_config = {"extra": "ignore"}
+#     model_config = {"extra": "ignore"}
 
-class TeamMatchup(BaseModel):
-    rosterForCurrentScoringPeriod: TeamRoster
+class TeamMatchupHistorical(BaseModel):
     teamId: int
     totalPoints: float
+    # TODO: 
 
     model_config = {"extra": "ignore"}
 
 class MatchupHistorical(BaseModel):
     id: int
-    away: TeamMatchup
-    home: TeamMatchup
+    away: TeamMatchupHistorical
+    home: TeamMatchupHistorical
     matchupPeriodId: int
 
     model_config = {"extra": "ignore"}
+
+
+# --------------------------------------------------
+# ROSTER MOVE
+# --------------------------------------------------
+
+class RosterMove(BaseModel):
+    playerId: int
+    type: Literal["LINEUP"] = "LINEUP"
+    fromLineupSlotId: int
+    toLineupSlotId: int
+
+    model_config = {"extra": "ignore"}
+
+class ExecuteRosterMove(BaseModel):
+    isLeagueManager: bool = False
+    teamId: int
+    type: Literal["ROSTER"] = "ROSTER"
+    scoringPeriodId: int
+    executionType: Literal["EXECUTE", "VALIDATE"] = "EXECUTE"
+    items: List[RosterMove] = Field(min_length=1)
+
+    model_config = {
+        "extra": "ignore",          # tolerate extra keys from user code
+        "populate_by_name": True,   # if you later add aliases
+    }
+
+class RosterMoveResponse(BaseModel):
+    pass
