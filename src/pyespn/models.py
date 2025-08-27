@@ -10,16 +10,16 @@ from .codebook import codebook, Position, ProTeam
 class RecordLine(BaseModel):
     wins: int
     losses: int
-    ties: int = 0
-    pointsFor: Optional[float] = 0.0
-    pointsAgainst: Optional[float] = 0.0
+    ties: int
+    pointsFor: float
+    pointsAgainst: float
 
     model_config = {"extra": "ignore"}
 
 class TeamRecord(BaseModel):
-    overall: Optional[RecordLine] = None
-    home: Optional[RecordLine] = None
-    away: Optional[RecordLine] = None
+    overall: RecordLine
+    home: RecordLine
+    away: RecordLine
     
     model_config = {"populate_by_name": True, "extra": "ignore"}
 
@@ -27,15 +27,15 @@ class Team(BaseModel):
     id: int
     abbrev: str
     name: str
-    currentProjectedRank: Optional[int] = None
-    draftDayProjectedRank: Optional[int] = None
-    rankCalculatedFinal: Optional[int] = None
-    rankFinal: Optional[int] = None
-    playoffSeed: Optional[int] = None
-    points: Optional[float] = None
-    pointsAdjusted: Optional[float] = None
-    waiverRank: Optional[int] = None
-    record: Optional[TeamRecord] = None
+    currentProjectedRank: int = None
+    draftDayProjectedRank: int = None
+    rankCalculatedFinal: int = None
+    rankFinal: int = None
+    playoffSeed: int = None
+    points: float = None
+    pointsAdjusted: float = None
+    waiverRank: int = None
+    record: TeamRecord = None
 
     model_config = {
         "populate_by_name": True,  # allow using both field and alias names
@@ -56,10 +56,45 @@ class Player(BaseModel):
 
     model_config = {"extra": "ignore"}
 
-    def position(self) -> Position:
+    def default_position(self) -> Position:
         """Return Position object for default_position_id"""
         return codebook().position(self.defaultPositionId)
+    
+    def eligible_positions(self) -> List[Position]:
+        return [codebook().position(p) for p in self.eligibleSlots]
 
     def pro_team(self) -> ProTeam:
         """Return a ProTeam object for pro_team_id"""
         return codebook().pro_team(self.proTeamId)
+    
+
+# --------------------------------------------------
+# MATCHUP
+# --------------------------------------------------
+
+class RosterEntry(BaseModel):
+    lineupSlotId: int
+    playerId: int
+
+    model_config = {"extra": "ignore"}
+
+class TeamRoster(BaseModel):
+    appliedStatTotal: float
+    entries: List[RosterEntry]
+
+    model_config = {"extra": "ignore"}
+
+class TeamMatchup(BaseModel):
+    rosterForCurrentScoringPeriod: TeamRoster
+    teamId: int
+    totalPoints: float
+
+    model_config = {"extra": "ignore"}
+
+class MatchupHistorical(BaseModel):
+    id: int
+    away: TeamMatchup
+    home: TeamMatchup
+    matchupPeriodId: int
+
+    model_config = {"extra": "ignore"}

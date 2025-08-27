@@ -39,11 +39,29 @@ operations:
     # field_map:
     #   defaultPositionId: default_position_id
 
-  boxscores:
+  # less detailed than mMatchup
+  # returns boxscore-level info per matchup for entire season specified
+  # boxscores:
+  #   route: "league"
+  #   params:
+  #     view: "mBoxscore"
+  #   model: "Boxscore"
+  #   response_root: "schedule"
+  #   response_form: "list"
+
+  # matchups:
+  #   route: "league"
+  #   params:
+  #     view: "mMatchup"
+  #   model: "Matchup"
+  #   response_root: "schedule"
+  #   response_form: "list"
+
+  matchups_historical:
     route: "league"
     params:
-      view: "mBoxscore"
-    model: "Boxscore"
+      view: "mMatchup"
+    model: "MatchupHistorical"
     response_root: "schedule"
     response_form: "list"
 

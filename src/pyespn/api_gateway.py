@@ -10,7 +10,7 @@ import httpx
 import yaml
 from pydantic import BaseModel
 
-from .models import Team, TeamRecord, Player
+from .models import Team, Player, Matchup
 from .settings import ESPNSettings
 
 # Model registry so the schema can refer to models by name.
@@ -18,8 +18,9 @@ from .settings import ESPNSettings
 # sub-models, no need to define here
 MODEL_REGISTRY: Dict[str, Type[BaseModel]] = {
     "Team": Team,
-    "TeamRecord": TeamRecord,
-    "Player": Player
+    "Player": Player,
+    # "Boxscore": Boxscore
+    "Matchup": Matchup
 }
 
 @dataclass

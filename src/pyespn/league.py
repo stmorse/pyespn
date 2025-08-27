@@ -2,7 +2,7 @@
 from typing import Any, Dict, List, Optional, Type
 
 from .api_gateway import APIGateway
-from .models import Team, Player
+from .models import Team, Player, Matchup
 
 class League:
     def __init__(self, season: int, league_id: int):
@@ -22,4 +22,11 @@ class League:
         return self.gw.request(
             "players_short",
             path_args={"season": self.season}
+        )
+    
+    def get_matchups(self) -> List[Matchup]:
+        # returns boxscore-level detail on all matchups for the season
+        return self.gw.request(
+            "matchups",
+            path_args={"season": self.season, "league_id": self.league_id}
         )

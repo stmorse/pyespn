@@ -10,20 +10,24 @@ def main() -> None:
     league = League(season=season, league_id=league_id)
 
     # do a test call to grab teams
-    teams = league.get_teams()
-    for t in teams:
-        # print(t.record.home.points_against)
-        # print(t.record)
-        # print(t.record.home)
-        print(t)
-        print()
+    # teams = league.get_teams()
+    # for t in teams:
+    #     # print(t.record.home.points_against)
+    #     # print(t.record)
+    #     # print(t.record.home)
+    #     print(t)
+    #     print()
 
-    print()
+    # print()
 
-    players = league.get_players()
-    for p in players[:5]:
-        print(p)
-        print()
+    # players = league.get_players()
+    # for p in players[:5]:
+    #     print(p)
+    #     print()
+
+    matchups = league.get_matchups()
+    print(matchups[0])
+    print(len(matchups))
 
 if __name__ == "__main__":
     main()
